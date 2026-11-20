@@ -1,67 +1,142 @@
-# Template de démonstration
+# CompreFace
 
-Ceci est la documentation utilisateur de l'intégration. Gladys ré-héberge ce
-fichier et affiche un lien **Documentation** permanent vers lui dans l'écran
-de configuration (dans la langue de l'utilisateur, avec l'anglais en repli) —
-c'est au moment de configurer que l'utilisateur en a le plus besoin. Gardez
-les courtes indications d'accueil dans les blocs `section` du `config_schema`
-du manifest ; mettez ici le pas-à-pas détaillé (captures d'écran, dépannage…).
+Apporte la **reconnaissance faciale locale** de [CompreFace](https://github.com/exadel-inc/CompreFace)
+(Exadel, libre) aux images de vos caméras : Gladys sait qui est dans le champ parmi les personnes que
+vous avez apprises à CompreFace, voit les visages qu'il ne connaît pas, et peut lancer une scène quand
+quelqu'un apparaît. Tout reste sur votre réseau : les images vont de la caméra à l'intégration, puis à
+votre serveur CompreFace, et nulle part ailleurs. CompreFace analyse une image à la demande ; ce n'est
+pas un enregistreur vidéo.
 
-## Ce que vous obtenez
+Testée contre un vrai serveur CompreFace en Docker (`exadel/compreface:1.2.0`, processeur) avec des
+portraits du domaine public (une personne ajoutée puis reconnue sur une autre photo, des inconnus, un
+paysage sans visage, une mauvaise clé, le serveur arrêté), pas encore avec de vraies caméras en
+service : vos retours sont les bienvenus sur [GitHub](https://github.com/guim31/gladys-compreface/issues)
+ou sur le forum Gladys.
 
-Six appareils de démonstration apparaissent après l'installation : une
-station météo (vraies données Open-Meteo), un interrupteur, une lampe
-variable, une prise connectée avec mesure de puissance, un détecteur de
-mouvement et une caméra.
+## Ce qu'il faut
 
-## Configuration
+- Gladys 5.1 ou plus récent.
+- Un serveur CompreFace, joignable depuis Gladys sur son port (8000 par défaut), avec une application
+  et un service de type **Recognition** : sa **clé d'API** est ce dont l'intégration a besoin.
+- Pour chaque caméra, une **URL d'instantané JPEG** (la plupart des caméras IP en ont une, ex.
+  `http://utilisateur:motdepasse@192.168.1.30/snapshot.jpg`).
 
-1. Ouvrez l'onglet **Configuration** de l'intégration.
-2. Renseignez la **latitude** et la **longitude** que la station météo de
-   démonstration doit observer (Paris par défaut), et choisissez votre unité
-   de température. L'**intervalle de rafraîchissement** règle la fréquence
-   de lecture de la station météo et de la puissance de la prise : toutes
-   les 5 minutes par défaut, toutes les minutes au plus.
-3. Enregistrez : les appareils apparaissent dans l'onglet **Découverte**,
-   prêts à être ajoutés.
+Une intégration ne peut pas lire l'image d'une caméra déjà présente dans Gladys (pas d'accès de ce
+type pour les intégrations externes) : donnez l'adresse propre de la caméra.
 
-Le réglage **Préférer la connexion locale** pilote la prise de
-démonstration : elle affiche en badge le canal réellement utilisé (local ou
-cloud), avec un point orange quand elle fonctionne en mode dégradé (local
-refusé, bascule cloud).
+## Installation
 
-## Actions
+1. Démarrez CompreFace, par exemple l'image tout-en-un :
+   `docker run -d --restart unless-stopped -p 8000:80 exadel/compreface:1.2.0` (il lui faut environ 2 Go
+   de mémoire et un processeur avec AVX). Ouvrez `http://<serveur>:8000`, créez votre compte, une
+   application, puis un service **Recognition**, et copiez sa clé d'API.
+2. Dans Gladys, **Intégrations → Installer depuis GitHub**, adresse
+   `https://github.com/guim31/gladys-compreface`.
+3. Dans la configuration, renseignez **Adresse de CompreFace** et la **Clé d'API du service Recognition**, puis pour chaque
+   caméra (quatre au plus) un **Nom** et une **Adresse de l'instantané**.
+4. Lancez l'action **Vérifier la connexion** : elle liste les personnes que CompreFace connaît et
+   analyse chaque caméra une fois.
+5. Ouvrez l'onglet **Découverte** et ajoutez les caméras : un appareil par caméra.
+6. Apprenez les visages à CompreFace : dans sa propre interface (quelques photos par personne), ou avec
+   l'action **Ajouter un visage** : placez-vous seul(e) devant une caméra, choisissez-la, tapez votre
+   nom. Trois à cinq exemples par personne, sous des lumières et des angles différents, donnent les
+   meilleurs résultats.
 
-- **Tester le fournisseur météo** — effectue une requête en direct vers
-  Open-Meteo et affiche la température et l'humidité actuelles sous le
-  bouton.
-- **Identifier un appareil** — choisissez un de vos appareils dans la liste
-  et il se signale (la lampe de démonstration « clignote » dans les logs).
+Réglages :
+
+- **Similarité minimale** : en dessous, un visage compte comme inconnu. 85 % est un bon départ ;
+  montez-la si des personnes sont confondues, baissez-la si des personnes connues apparaissent comme
+  inconnues.
+- **Seuil de détection des visages** : à quel point CompreFace doit être sûr qu'une forme est un
+  visage (80 % par défaut).
+- **Intervalle d'analyse** : le rythme d'analyse de chaque caméra ajoutée, l'une après l'autre. **À
+  la demande seulement** n'analyse rien de lui-même (action de scène, bouton du widget, image demandée
+  par Gladys).
+- **Langue des noms** : noms des fonctionnalités et textes des scènes.
+
+**Charge processeur** : chaque analyse prend environ une demi-seconde sur un processeur pour une image
+1080p. Quatre caméras toutes les 5 secondes occupent une petite machine ; 30 secondes est un bon départ.
+
+## Les appareils dans Gladys
+
+Un appareil par caméra, avec :
+
+- **Image** : la dernière image analysée (réduite pour Gladys).
+- **Dernière personne reconnue** : le nom de la dernière personne connue vue, gardé jusqu'à la
+  suivante.
+- **Similarité (%)** : la ressemblance de ce visage avec les exemples de la personne.
+- **Reconnue le** : date et heure de cette reconnaissance.
+- **Personne connue** : une personne connue est dans le champ à la dernière analyse (Oui/Non).
+- **Visage inconnu** : un visage que personne ne connaît est dans le champ (Oui/Non).
+- **Visages** : le nombre de visages dans le champ.
+
+Le badge de l'appareil passe à « injoignable » quand l'image de la caméra ne peut pas être lue.
+
+## Widget du tableau de bord
+
+**Caméra CompreFace** : l'image analysée, les personnes dans le champ avec leur similarité, le nombre
+de visages inconnus, la dernière personne reconnue et quand, et un bouton **Analyser maintenant** (le
+réglage **Masquer le bouton Analyser** le cache).
 
 ## Scènes
 
-L'intégration ajoute ses propres cartes à l'éditeur de scènes (Gladys 5.1
-ou plus récent), dans la catégorie **Intégrations** :
+### Déclencheurs
 
-- **Mouvement détecté** (déclencheur) — lance la scène quand un détecteur
-  de démonstration voit bouger quelque chose. Choisissez éventuellement le
-  détecteur et ce qui a bougé (personne, animal) ; laissés vides, toute
-  détection correspond. Les actions suivantes peuvent lire ce qui a bougé
-  avec `{{triggerEvent.data.target}}`.
-- **Identifier un appareil** (action) — fait se signaler l'appareil choisi.
-  Elle indique si l'appareil a pu se signaler, pour que les actions
-  suivantes puissent en dépendre.
+- **Personne reconnue par CompreFace** : une personne connue apparaît lors d'une analyse régulière
+  (absente de la précédente), sur une caméra ou n'importe laquelle. Filtre sur le nom exact de la
+  personne (vide : n'importe qui). Variables : caméra, personne, similarité. Un événement quand la
+  personne apparaît, pas un par analyse. Qui est déjà dans le champ quand l'appareil est ajouté, après
+  un redémarrage ou un changement de réglages ne compte pas.
+- **Visage inconnu vu par CompreFace** : un visage que personne ne connaît apparaît (aucun à l'analyse
+  précédente). Variables : caméra, nombre de visages inconnus.
+- **Image de caméra non lue** : l'image d'une caméra n'a pas pu être lue (le premier échec d'affilée).
 
-## Tableau de bord
+Les déclencheurs viennent des seules analyses régulières : avec **À la demande seulement**, ils ne se
+déclenchent jamais.
 
-Ajoutez le widget **État de la démo** à un tableau de bord : il affiche en
-direct la température de la station météo et la puissance de la prise du
-bureau, la connexion utilisée par la prise (en orange si dégradée) et la
-position observée. Son bouton **Identifier la lampe** fait se signaler la
-lampe de démonstration.
+### Actions
+
+- **Reconnaître les visages d'une caméra** : analyse la caméra maintenant et met à jour son image.
+  Sorties : personne connue vue, personne la plus ressemblante, personnes reconnues, similarité,
+  visages inconnus, visages, résultat en clair. Elle ne déclenche aucun déclencheur.
+
+### Idées de scènes
+
+- Quand on sonne, **Reconnaître les visages d'une caméra**, puis envoyer « {{résultat}} est à la
+  porte » avec l'action « Envoyer une image de caméra » du cœur.
+- **Personne reconnue par CompreFace** (un enfant, caméra de l'entrée) un après-midi d'école →
+  notification « rentré(e) à la maison ».
+- **Visage inconnu vu par CompreFace** alarme activée → notification avec l'image.
+
+## Vie privée
+
+Les visages sont des données biométriques. L'intégration n'envoie les images des caméras qu'au serveur
+CompreFace configuré, sur votre réseau, et ne garde rien sur disque : la dernière image de chaque
+caméra reste en mémoire. Les visages et les exemples vivent dans la base de CompreFace. Prévenez les
+personnes qui vivent chez vous ou vous rendent visite que leur visage est analysé, et respectez la loi
+de votre pays sur la captation d'images.
 
 ## Dépannage
 
-L'intégration journalise tout ce qu'elle fait : consultez les logs de
-l'intégration depuis l'interface Gladys (ou `docker logs` sur l'hôte) avec
-`LOG_LEVEL=debug` pour le détail complet.
+- **CompreFace ne répond pas** : vérifiez l'adresse et le port (8000), et que chaque conteneur de
+  CompreFace tourne (`docker logs`) ; le premier démarrage prend quelques minutes.
+- **CompreFace refuse la clé d'API** : copiez la clé d'un service **Recognition**, pas d'un service
+  Detection ou Verification.
+- **Image non lue** : ouvrez l'adresse de la caméra dans un navigateur depuis la machine de Gladys :
+  elle doit donner une image JPEG, pas une page. L'authentification Digest n'est pas prise en charge.
+- **Des personnes connues apparaissent comme inconnues** : ajoutez des exemples (lumières et angles
+  différents), ou baissez la **Similarité minimale**.
+- **Ajouter un visage** ne trouve aucun visage : approchez-vous, face à la caméra, avec assez de
+  lumière.
+- Logs détaillés : `LOG_LEVEL=debug`.
+
+## Limites
+
+- Quatre caméras au plus.
+- L'adresse de la caméra, mot de passe compris, et la clé d'API sont stockées dans la configuration de
+  l'intégration, visibles par les administrateurs de Gladys : préférez un utilisateur de caméra en
+  lecture seule.
+- Pas de vidéo : une image par analyse ; une personne qui passe entre deux analyses n'est pas vue.
+- Les images des caméras partent vers Gladys au plus toutes les 5 secondes par caméra.
+- Sans lien avec Exadel ni le projet CompreFace. Développée sans vraies caméras : vos retours sont les
+  bienvenus.

@@ -1,0 +1,17 @@
+{
+  "status": 200,
+  "body": {
+    "result": [
+      {
+        "box": {
+          "probability": 0.9999,
+          "x_max": 849,
+          "y_max": 825,
+          "x_min": 287,
+          "y_min": 183
+        },
+        "subjects": []
+      }
+    ]
+  }
+}

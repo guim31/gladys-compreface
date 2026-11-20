@@ -1,0 +1,7 @@
+{
+  "status": 404,
+  "body": {
+    "message": "Recognition service with API Key 123e4567-e89b-42d3-a456-426614174000 not found",
+    "code": 10
+  }
+}
