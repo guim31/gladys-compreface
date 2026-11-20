@@ -125,9 +125,10 @@ export class FaceMonitor {
     const previousConfig = this.config;
     this.config = config;
     this.generation += 1;
-    const url = parseServerUrl(config.url);
-    this.client = url
-      ? new CompreFaceClient({ url, apiKey: config.apiKey, fetch: this.fetch })
+    // The address as typed: parsing it twice would turn an explicit `:80`
+    // into the default 8000.
+    this.client = parseServerUrl(config.url)
+      ? new CompreFaceClient({ url: config.url, apiKey: config.apiKey, fetch: this.fetch })
       : null;
     const sameServer =
       previousConfig &&

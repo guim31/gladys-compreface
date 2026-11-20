@@ -64,6 +64,7 @@ test('addresses: CompreFace port 8000 by default, camera credentials never shown
   assert.equal(parseServerUrl('192.0.2.10'), 'http://192.0.2.10:8000');
   assert.equal(parseServerUrl('faces.lan:9000/'), 'http://faces.lan:9000');
   assert.equal(parseServerUrl('https://faces.example/'), 'https://faces.example');
+  assert.equal(parseServerUrl('http://192.0.2.10:80'), 'http://192.0.2.10');
   assert.equal(parseServerUrl('ftp://x'), null);
   assert.equal(parseServerUrl(''), null);
   assert.equal(redact('http://admin:secret@192.0.2.30/snap.jpg'), 'http://192.0.2.30');
@@ -365,6 +366,12 @@ test('CompreFace down: the status turns red, comes back by itself; actions fail 
       '- Garden: Nobody',
     ].join('\n'),
   );
+});
+
+test('an explicit port 80 stays 80 (the address is parsed once)', async (t) => {
+  const world = await createWorld({ config: { ...BASE_CONFIG, url: 'http://192.0.2.10:80' } });
+  t.after(() => world.app.stop());
+  assert.equal(world.monitor.client.base, 'http://192.0.2.10');
 });
 
 test('a wrong key or none: the status says which, the actions fail in red', async (t) => {
