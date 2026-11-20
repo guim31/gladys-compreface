@@ -10,6 +10,8 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-11-20
+
 ### Added
 
 - Local face recognition with CompreFace on up to four cameras (JPEG snapshot
@@ -28,4 +30,5 @@ the notes of the version's GitHub Release.
   example of a person).
 - English, French, German and Spanish.
 
-[Unreleased]: https://github.com/guim31/gladys-compreface/commits/main
+[Unreleased]: https://github.com/guim31/gladys-compreface/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/guim31/gladys-compreface/releases/tag/v1.0.0
