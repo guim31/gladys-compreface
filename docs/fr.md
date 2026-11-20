@@ -133,6 +133,8 @@ de votre pays sur la captation d'images.
 ## Limites
 
 - Quatre caméras au plus.
+- Un visage proche de la similarité minimale, ou une personne qui se détourne le temps d'une analyse,
+  peut « réapparaître » et relancer le déclencheur.
 - L'adresse de la caméra, mot de passe compris, et la clé d'API sont stockées dans la configuration de
   l'intégration, visibles par les administrateurs de Gladys : préférez un utilisateur de caméra en
   lecture seule.

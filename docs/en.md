@@ -124,6 +124,8 @@ visit you that their faces are analyzed, and follow the law of your country abou
 ## Limits
 
 - Four cameras at most.
+- A face close to the minimum similarity, or a person who turns away for one analysis, may "appear"
+  again and fire the trigger a second time.
 - The camera address, password included, and the API key are stored in the integration configuration
   and visible there to the Gladys administrators: prefer a camera user that can only view.
 - No video: one picture per analysis; a person passing between two analyses is missed.

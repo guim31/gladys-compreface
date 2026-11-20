@@ -133,6 +133,8 @@ halte dich an die Gesetze deines Landes zu Videoaufnahmen.
 ## Grenzen
 
 - Höchstens vier Kameras.
+- Ein Gesicht nahe der Mindestähnlichkeit oder eine Person, die sich für eine Analyse abwendet, kann
+  „erneut erscheinen“ und den Auslöser ein zweites Mal starten.
 - Die Kameraadresse samt Passwort und der API-Schlüssel stehen in der Konfiguration der Integration,
   für die Gladys-Administratoren sichtbar: Nimm lieber einen Kamerabenutzer, der nur ansehen darf.
 - Kein Video: ein Bild pro Analyse; eine Person, die zwischen zwei Analysen vorbeigeht, wird nicht

@@ -26,6 +26,9 @@ export const DETECTIONS = [50, 70, 80, 90];
 
 export const CAMERA_SLOTS = [1, 2, 3, 4];
 
+// The name of a camera left without one ("Caméra 3").
+const CAMERA_WORD = { en: 'Camera', fr: 'Caméra', de: 'Kamera', es: 'Cámara' };
+
 export const DEFAULT_CONFIG = {
   url: '',
   similarity: '85',
@@ -41,7 +44,7 @@ export const DEFAULT_CONFIG = {
 };
 
 function pick(value, allowed, fallback) {
-  const number = Number(value);
+  const number = value === '' || value === null ? NaN : Number(value);
   return allowed.includes(number) ? number : Number(fallback);
 }
 
@@ -54,6 +57,7 @@ export function normalizeConfig(raw = {}) {
   const source = raw && typeof raw === 'object' ? raw : {};
   const read = (key) => (source[key] === undefined ? DEFAULT_CONFIG[key] : source[key]);
   const url = text(read('url'));
+  const language = LANGUAGES.includes(source.language) ? source.language : DEFAULT_CONFIG.language;
   const cameras = [];
   for (const slot of CAMERA_SLOTS) {
     const cameraUrl = text(source[`camera_${slot}_url`]);
@@ -62,7 +66,7 @@ export function normalizeConfig(raw = {}) {
     }
     cameras.push({
       slot,
-      name: text(source[`camera_${slot}_name`]).slice(0, 80) || `Camera ${slot}`,
+      name: text(source[`camera_${slot}_name`]).slice(0, 80) || `${CAMERA_WORD[language]} ${slot}`,
       url: cameraUrl,
       validUrl: Boolean(parseCameraUrl(cameraUrl)),
     });
@@ -74,7 +78,7 @@ export function normalizeConfig(raw = {}) {
     similarity: pick(read('similarity'), SIMILARITIES, DEFAULT_CONFIG.similarity),
     detection: pick(read('detection'), DETECTIONS, DEFAULT_CONFIG.detection),
     intervalSeconds: pick(read('interval'), INTERVALS, DEFAULT_CONFIG.interval),
-    language: LANGUAGES.includes(source.language) ? source.language : DEFAULT_CONFIG.language,
+    language,
     cameras,
   };
 }

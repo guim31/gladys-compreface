@@ -22,7 +22,18 @@ export const SCENES = {
   stranger: fixture('recognize-unknown'),
   two: fixture('recognize-two'),
   nobody: fixture('recognize-noface'),
+  // Derived from `two`: the second face is Bob, known too, and the two
+  // similarities cross from one picture to the other.
+  couple: couple(0.9963, 0.95),
+  coupleSwapped: couple(0.94, 0.97),
 };
+
+function couple(alice, bob) {
+  const recorded = fixture('recognize-two');
+  recorded.body.result[0].subjects = [{ subject: 'Alice', similarity: alice }];
+  recorded.body.result[1].subjects = [{ subject: 'Bob', similarity: bob }];
+  return recorded;
+}
 
 export const SERVER_URL = 'http://192.0.2.10:8000';
 export const CAMERA_HOST = 'http://192.0.2.20';

@@ -99,8 +99,8 @@ async function get(monitor, { settings, language = 'en' }) {
   }
   const result = camera.result;
   const caption = [
-    camera.analyzedAt && result
-      ? `${t(TEXT.analyzedAt, language)} ${timeOf(camera.analyzedAt, language)}`
+    camera.resultAt && result
+      ? `${t(TEXT.analyzedAt, language)} ${timeOf(camera.resultAt, language)}`
       : t(TEXT.notYet, language),
   ];
   if (!monitor.server?.ok) {
@@ -160,7 +160,7 @@ async function get(monitor, { settings, language = 'en' }) {
 
 async function action(monitor, { actionKey, settings }) {
   if (actionKey !== ACTIONS.ANALYZE) {
-    throw new Error(`Unknown action ${actionKey}`);
+    throw new ActionFailure(TEXT.pick);
   }
   if (!settings?.camera) {
     throw new ActionFailure(TEXT.pick);
@@ -185,7 +185,7 @@ export async function widgetImage(monitor, key) {
     ? [...monitor.cameras.values()].find((item) => tagOf(item) === match[1])
     : null;
   if (!camera?.image) {
-    throw new Error(`Unknown image ${key}`);
+    throw new ActionFailure(FAILURE.unknownCamera);
   }
   // Already fit for Gladys (150 KB), well under the 300 KB of a widget image.
   return camera.image.jpeg.toString('base64');

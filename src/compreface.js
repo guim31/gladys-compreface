@@ -56,7 +56,10 @@ export function parseServerUrl(text) {
   if (!['http:', 'https:'].includes(url.protocol) || !url.hostname) {
     return null;
   }
-  if (!url.port && url.protocol === 'http:' && !/:\d+/.test(withScheme.split('/')[2])) {
+  // An explicit port, even the default one (`:80`), is kept: read it from the
+  // authority without its user info (an IPv6 host holds colons too).
+  const authority = withScheme.split('/')[2].replace(/^.*@/, '');
+  if (!url.port && url.protocol === 'http:' && !/:\d+$/.test(authority)) {
     url.port = String(DEFAULT_PORT);
   }
   url.username = '';

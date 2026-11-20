@@ -9,7 +9,14 @@ import { LANGUAGES, normalizeConfig } from './config.js';
 import { resultText } from './devices.js';
 import { FaceMonitor } from './monitor.js';
 import { SCENE_ACTIONS } from './scenes.js';
-import { ActionFailure, CONNECTION_TEXT, INIT_FAILED, checkMessage, faceAdded } from './texts.js';
+import {
+  ActionFailure,
+  CONNECTION_TEXT,
+  FAILURE,
+  INIT_FAILED,
+  checkMessage,
+  faceAdded,
+} from './texts.js';
 import { WIDGETS, widgetImage } from './widgets.js';
 
 const logger = createLogger({ name: 'compreface-app' });
@@ -32,8 +39,13 @@ export async function check(monitor) {
         name: monitor.nameOf(camera),
         text: Object.fromEntries(LANGUAGES.map((lang) => [lang, resultText(summary, lang)])),
       });
-    } catch {
-      cameras.push({ name: monitor.nameOf(camera), failed: true });
+    } catch (err) {
+      // The server may fail meanwhile: a camera is "not read" only for its own fault.
+      cameras.push({
+        name: monitor.nameOf(camera),
+        failed: true,
+        server: err?.message !== FAILURE.camera,
+      });
     }
   }
   logger.info(`Connection checked: ${cameras.length} camera(s)`);
@@ -90,6 +102,8 @@ export function registerHandlers(gladys, options = {}) {
       started = true;
     } catch (err) {
       logger.error('Initialization failed', err);
+      // Checked again (and the status set again) by the next housekeeping.
+      monitor.server = null;
       await gladys.setConnectionStatus(false, INIT_FAILED).catch(() => {});
     } finally {
       resolveReady();
@@ -112,7 +126,12 @@ export function registerHandlers(gladys, options = {}) {
 
   gladys.onConfigUpdated(
     whenReady(async (newConfig) => {
-      await monitor.reconfigure(normalizeConfig(newConfig));
+      try {
+        await monitor.reconfigure(normalizeConfig(newConfig));
+      } catch (err) {
+        logger.error('New configuration not applied', err);
+        throw new ActionFailure(INIT_FAILED);
+      }
     }),
   );
 

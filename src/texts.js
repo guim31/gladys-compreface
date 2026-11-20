@@ -144,6 +144,7 @@ export const CHECK_TEXT = {
     nobody: 'Nobody known yet: add faces (action below, or the CompreFace interface).',
     camera: (name, text) => `- ${name}: ${text}`,
     failed: 'image not read',
+    server: 'CompreFace did not answer',
     noCamera: 'No camera configured yet.',
   },
   fr: {
@@ -153,6 +154,7 @@ export const CHECK_TEXT = {
       "Personne de connu pour l'instant : ajoutez des visages (action ci-dessous, ou l'interface de CompreFace).",
     camera: (name, text) => `- ${name} : ${text}`,
     failed: 'image non lue',
+    server: "CompreFace n'a pas répondu",
     noCamera: 'Aucune caméra configurée pour le moment.',
   },
   de: {
@@ -162,6 +164,7 @@ export const CHECK_TEXT = {
       'Noch niemand bekannt: Füge Gesichter hinzu (Aktion unten oder die CompreFace-Oberfläche).',
     camera: (name, text) => `- ${name}: ${text}`,
     failed: 'Bild nicht gelesen',
+    server: 'CompreFace hat nicht geantwortet',
     noCamera: 'Noch keine Kamera konfiguriert.',
   },
   es: {
@@ -171,6 +174,7 @@ export const CHECK_TEXT = {
       'Aún no hay nadie conocido: añada rostros (acción de abajo, o la interfaz de CompreFace).',
     camera: (name, text) => `- ${name}: ${text}`,
     failed: 'imagen no leída',
+    server: 'CompreFace no respondió',
     noCamera: 'Aún no hay ninguna cámara configurada.',
   },
 };
@@ -194,7 +198,12 @@ export function checkMessage(report) {
       lines.push(text.noCamera);
     }
     for (const camera of report.cameras.slice(0, MAX_LISTED)) {
-      lines.push(text.camera(camera.name, camera.failed ? text.failed : camera.text[language]));
+      const result = camera.failed
+        ? camera.server
+          ? text.server
+          : text.failed
+        : camera.text[language];
+      lines.push(text.camera(camera.name, result));
     }
     message[language] = lines.join('\n');
   }

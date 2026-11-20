@@ -131,6 +131,8 @@ grabación de personas.
 ## Límites
 
 - Cuatro cámaras como máximo.
+- Un rostro cercano a la similitud mínima, o una persona que se gira durante un análisis, puede
+  «reaparecer» y volver a activar el disparador.
 - La dirección de la cámara, contraseña incluida, y la clave de API se guardan en la configuración de
   la integración, visibles para los administradores de Gladys: prefiera un usuario de cámara que solo
   pueda ver.

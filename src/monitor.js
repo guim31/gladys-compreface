@@ -42,6 +42,9 @@ export const TRIGGERS = {
 
 export const WIDGET_KEY = 'camera';
 
+// How long a fresh image asked by Gladys (15 s at most) may wait for an analysis.
+const IMAGE_WAIT_MS = 12_000;
+
 export const DEFAULT_TIMINGS = {
   // Housekeeping: a server down is checked again, unchanged states re-sent.
   housekeepingMs: 60_000,
@@ -80,6 +83,8 @@ export class FaceMonitor {
   // --- Life cycle ------------------------------------------------------------
 
   async start(config) {
+    // A start tried again after a failed one: no second set of timers.
+    this.stopTimers();
     this.applyConfig(config);
     // Timers first: a failed publication below must not leave the
     // integration without its housekeeping.
@@ -151,6 +156,10 @@ export class FaceMonitor {
         image: same ? known.image : null,
         // What the last analysis saw (see fireAppeared).
         present: same ? known.present : new Set(),
+        // Who the last analysis of any kind saw: the arrivals behind the last
+        // person recognized (the events use `present`, regular analyses only).
+        seen: same ? known.seen : new Set(),
+        resultAt: same ? known.resultAt : 0,
         unknownPresent: same ? known.unknownPresent : false,
         seeded: same ? known.seeded : false,
         failure: same ? known.failure : null,
@@ -438,7 +447,8 @@ export class FaceMonitor {
     if (camera.running) {
       return camera.running;
     }
-    const run = this.enqueue(() => this.runAnalysis(camera, { events }));
+    const generation = this.generation;
+    const run = this.enqueue(() => this.runAnalysis(camera, { events, generation }));
     camera.running = run.finally(() => {
       camera.running = null;
     });
@@ -466,8 +476,7 @@ export class FaceMonitor {
     }
   }
 
-  async runAnalysis(camera, { events }) {
-    const generation = this.generation;
+  async runAnalysis(camera, { events, generation = this.generation }) {
     if (!this.client || !this.server?.ok) {
       throw new ActionFailure(FAILURE.notConfigured);
     }
@@ -486,7 +495,7 @@ export class FaceMonitor {
       throw new ActionFailure(err.kind === 'auth' ? FAILURE.auth : FAILURE.server);
     }
     const summary = summarize(faces, this.config.similarity);
-    if (generation !== this.generation) {
+    if (generation !== this.generation || this.cameras.get(camera.slot) !== camera) {
       // The configuration changed meanwhile: this camera object is gone.
       return summary;
     }
@@ -494,12 +503,15 @@ export class FaceMonitor {
     const changed = JSON.stringify(camera.result) !== JSON.stringify(summary);
     camera.result = summary;
     camera.analyzedAt = now;
-    // The last person recognized, and when they arrived: kept while they
-    // stay in view, so the date is not rewritten at every analysis.
-    const top = summary.known[0];
-    if (top && (camera.lastKnown?.name !== top.name || !camera.present.has(top.name))) {
-      camera.lastKnown = { ...top, at: now };
+    camera.resultAt = now;
+    // The last person recognized, and when they arrived: only an arrival
+    // (absent from the previous analysis) changes it, so two people staying
+    // in view do not rewrite it at every analysis.
+    const arrival = summary.known.find((person) => !camera.seen.has(person.name));
+    if (arrival) {
+      camera.lastKnown = { ...arrival, at: now };
     }
+    camera.seen = new Set(summary.known.map((person) => person.name));
     if (this.serverFailing) {
       this.serverFailing = false;
       logger.info('CompreFace analyzes again');
@@ -681,7 +693,15 @@ export class FaceMonitor {
       camera.image &&
       this.clock() - camera.image.at < Math.max(this.config.intervalSeconds, 10) * 1000;
     if (!fresh && this.server?.ok) {
-      await this.analyze(camera, { events: false }).catch(() => {});
+      // Gladys waits 15 s for the image: past 12 s, the last picture.
+      let timer;
+      await Promise.race([
+        this.analyze(camera, { events: false }).catch(() => {}),
+        new Promise((resolve) => {
+          timer = setTimeout(resolve, IMAGE_WAIT_MS);
+        }),
+      ]);
+      clearTimeout(timer);
     }
     // A camera down: no old picture passed off as the current one.
     if (!camera.image || camera.failure) {

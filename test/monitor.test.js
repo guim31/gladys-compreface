@@ -65,6 +65,8 @@ test('addresses: CompreFace port 8000 by default, camera credentials never shown
   assert.equal(parseServerUrl('faces.lan:9000/'), 'http://faces.lan:9000');
   assert.equal(parseServerUrl('https://faces.example/'), 'https://faces.example');
   assert.equal(parseServerUrl('http://192.0.2.10:80'), 'http://192.0.2.10');
+  assert.equal(parseServerUrl('http://[2001:db8::1]'), 'http://[2001:db8::1]:8000');
+  assert.equal(parseServerUrl('http://user:1234@faces.lan'), 'http://faces.lan:8000');
   assert.equal(parseServerUrl('ftp://x'), null);
   assert.equal(parseServerUrl(''), null);
   assert.equal(redact('http://admin:secret@192.0.2.30/snap.jpg'), 'http://192.0.2.30');
@@ -230,6 +232,67 @@ test('regular analyses: only changes published, an event when someone appears', 
   world.clock.advance(30_000);
   await world.monitor.tick();
   assert.equal(world.fake.sceneEvents.length, 3);
+});
+
+test('the last person recognized changes on an arrival only, not when two people stay', async (t) => {
+  const world = await createWorld();
+  t.after(() => world.app.stop());
+  world.server.subjects.push('Bob');
+  await createAll(world);
+  const person = () => text(world, `${ID.front}:person`);
+  const at = () => world.monitor.cameras.get(1).lastKnown.at;
+  assert.equal(person(), 'Alice');
+  const arrived = at();
+  // Bob joins Alice, less similar: he is the one who arrived.
+  world.server.scene('front', 'couple');
+  world.clock.advance(30_000);
+  await world.monitor.tick();
+  assert.equal(person(), 'Bob');
+  const bobAt = at();
+  assert.ok(bobAt > arrived);
+  // Both stay, their similarities cross: nothing is rewritten.
+  for (const scene of ['coupleSwapped', 'couple', 'coupleSwapped']) {
+    world.server.scene('front', scene);
+    world.clock.advance(30_000);
+    await world.monitor.tick();
+  }
+  assert.equal(person(), 'Bob');
+  assert.equal(at(), bobAt);
+});
+
+test('the check report tells a server failure from an unreadable camera', async (t) => {
+  const world = await createWorld();
+  t.after(() => world.app.stop());
+  const original = world.server.server.bind(world.server);
+  world.server.server = (url, init) =>
+    url.pathname.endsWith('/recognize')
+      ? new Response('busy', { status: 503 })
+      : original(url, init);
+  const ack = await world.fake.action('check', {});
+  assert.equal(ack.success, false);
+  assert.match(ack.error.fr, /Front door : CompreFace n'a pas répondu/);
+  assert.deepEqual(Object.keys(ack.error).sort(), ['de', 'en', 'es', 'fr']);
+});
+
+test('a failed start is tried again on the next connection, with one set of timers', async (t) => {
+  const gladysDown = await createWorld({ connect: false });
+  t.after(() => gladysDown.app.stop());
+  const { fake, gladys, monitor } = gladysDown;
+  const publish = gladys.publishDiscoveredDevices.bind(gladys);
+  let fail = true;
+  gladys.publishDiscoveredDevices = async (devices) => {
+    if (fail) {
+      throw new Error('HTTP 503');
+    }
+    return publish(devices);
+  };
+  await gladys.connect();
+  await gladysDown.app.ready;
+  assert.equal(fake.connectionStatus.connected, false);
+  assert.equal(monitor.server, null, 'checked again by the housekeeping');
+  fail = false;
+  await monitor.housekeeping();
+  assert.deepEqual(fake.connectionStatus, { connected: true });
 });
 
 test('after a restart, the first regular analysis records the scene without an event', async (t) => {
