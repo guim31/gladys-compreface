@@ -1,0 +1,37 @@
+{
+  "status": 200,
+  "body": {
+    "result": [
+      {
+        "box": {
+          "probability": 1.0,
+          "x_max": 383,
+          "y_max": 369,
+          "x_min": 142,
+          "y_min": 99
+        },
+        "subjects": [
+          {
+            "subject": "Alice",
+            "similarity": 0.99628
+          }
+        ]
+      },
+      {
+        "box": {
+          "probability": 0.99635,
+          "x_max": 783,
+          "y_max": 313,
+          "x_min": 573,
+          "y_min": 79
+        },
+        "subjects": [
+          {
+            "subject": "Alice",
+            "similarity": 0.20771
+          }
+        ]
+      }
+    ]
+  }
+}

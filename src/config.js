@@ -1,45 +1,84 @@
 // -----------------------------------------------------------------------------
-// Integration configuration.
+// Integration configuration: defaults (they mirror the `default` values of the
+// manifest `config_schema`, see test/manifest.test.js) and normalization, so
+// the rest of the code never deals with strings, blanks or `undefined`.
 //
-// The configuration is filled in by the user in Gladys, from the `config_schema`
-// declared in `gladys-assistant-integration.json`. The SDK fetches it for you
-// (`gladys.getConfig()`) and notifies you of every change through
-// `gladys.onConfigUpdated()`.
-//
-// This module only provides defaults and normalizes the received object, so the
-// rest of the code never has to deal with `undefined`.
+// Cameras come in four numbered slots (`camera_<n>_…`): the configuration form
+// of Gladys has no list field. The slot number is the camera's identity in
+// Gladys (its external id), whatever its name or address.
 // -----------------------------------------------------------------------------
 
-// Defaults: they MUST stay consistent with the `default` values declared in the
-// `config_schema` of the manifest.
+import { parseServerUrl } from './compreface.js';
+import { parseCameraUrl } from './snapshot.js';
+
+export const LANGUAGES = ['en', 'fr', 'de', 'es'];
+
+// Seconds between two analyses of each camera (`interval`); 0 = on demand
+// only (scene action, widget button, the image asked by Gladys).
+export const INTERVALS = [0, 5, 10, 30, 60, 300, 900];
+
+// Minimum similarity, in percent, for a face to be a known person; below, the
+// face is an unknown one.
+export const SIMILARITIES = [70, 75, 80, 85, 90, 95];
+
+// Minimum probability, in percent, for a box to be a face at all.
+export const DETECTIONS = [50, 70, 80, 90];
+
+export const CAMERA_SLOTS = [1, 2, 3, 4];
+
+// The name of a camera left without one ("Caméra 3").
+const CAMERA_WORD = { en: 'Camera', fr: 'Caméra', de: 'Kamera', es: 'Cámara' };
+
 export const DEFAULT_CONFIG = {
-  latitude: 48.8566, // Paris
-  longitude: 2.3522,
-  unit: 'celsius', // 'celsius' | 'fahrenheit'
-  // Seconds between two reads of the polled sensors. Gladys polls at most once
-  // a minute: slower intervals are applied by skipping polls (see
-  // createPoller in src/devices/index.js).
-  poll_frequency: 300,
-  // Reserved key (NOT in config_schema): because the manifest declares both
-  // 'local' and 'cloud' in its `transports` field, Gladys shows a standard
-  // "Prefer the local connection" toggle and sends the user's choice here.
-  // Read-only for the integration; defaults to true.
-  GLADYS_PREFER_LOCAL: true,
+  url: '',
+  similarity: '85',
+  detection: '80',
+  interval: '30',
+  language: 'fr',
+  ...Object.fromEntries(
+    CAMERA_SLOTS.flatMap((slot) => [
+      [`camera_${slot}_name`, ''],
+      [`camera_${slot}_url`, ''],
+    ]),
+  ),
 };
 
+function pick(value, allowed, fallback) {
+  const number = value === '' || value === null ? NaN : Number(value);
+  return allowed.includes(number) ? number : Number(fallback);
+}
+
+const text = (value) => (typeof value === 'string' ? value.trim() : '');
+
 /**
- * Merge the user config with the defaults.
- * @param {Record<string, unknown>} raw config returned by the SDK
+ * @param {Record<string, unknown>} raw the configuration returned by the SDK
  */
 export function normalizeConfig(raw = {}) {
+  const source = raw && typeof raw === 'object' ? raw : {};
+  const read = (key) => (source[key] === undefined ? DEFAULT_CONFIG[key] : source[key]);
+  const url = text(read('url'));
+  const language = LANGUAGES.includes(source.language) ? source.language : DEFAULT_CONFIG.language;
+  const cameras = [];
+  for (const slot of CAMERA_SLOTS) {
+    const cameraUrl = text(source[`camera_${slot}_url`]);
+    if (!cameraUrl) {
+      continue;
+    }
+    cameras.push({
+      slot,
+      name: text(source[`camera_${slot}_name`]).slice(0, 80) || `${CAMERA_WORD[language]} ${slot}`,
+      url: cameraUrl,
+      validUrl: Boolean(parseCameraUrl(cameraUrl)),
+    });
+  }
   return {
-    ...DEFAULT_CONFIG,
-    ...raw,
-    // Force the types: config may arrive as strings from a form.
-    latitude: Number(raw.latitude ?? DEFAULT_CONFIG.latitude),
-    longitude: Number(raw.longitude ?? DEFAULT_CONFIG.longitude),
-    poll_frequency: Number(raw.poll_frequency ?? DEFAULT_CONFIG.poll_frequency),
-    // The preference is a boolean; anything but an explicit false means true.
-    GLADYS_PREFER_LOCAL: raw.GLADYS_PREFER_LOCAL !== false,
+    url,
+    validUrl: Boolean(parseServerUrl(url)),
+    apiKey: text(source.api_key),
+    similarity: pick(read('similarity'), SIMILARITIES, DEFAULT_CONFIG.similarity),
+    detection: pick(read('detection'), DETECTIONS, DEFAULT_CONFIG.detection),
+    intervalSeconds: pick(read('interval'), INTERVALS, DEFAULT_CONFIG.interval),
+    language,
+    cameras,
   };
 }

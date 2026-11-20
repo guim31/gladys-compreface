@@ -1,101 +1,578 @@
 {
   "manifest_version": 1,
   "type": "device",
-  "name": "Demo Devices Template",
+  "name": "CompreFace",
   "description": {
-    "en": "Starter template showing sensors, a switch, a dimmable light and a smart plug.",
-    "fr": "Template de démarrage : capteurs, interrupteur, lampe variable et prise connectée."
+    "en": "Local face recognition on your camera images with CompreFace: who is at the door, without the cloud.",
+    "fr": "Reconnaissance faciale locale sur vos caméras avec CompreFace : qui est à la porte, sans cloud.",
+    "de": "Lokale Gesichtserkennung in deinen Kamerabildern mit CompreFace: Wer ist an der Tür, ohne Cloud.",
+    "es": "Reconocimiento facial local en sus cámaras con CompreFace: quién está en la puerta, sin nube."
   },
   "version": "1.0.0",
-  "docker_image": "ghcr.io/gladysassistant/integration-template-js:1.0.0",
+  "docker_image": "ghcr.io/guim31/gladys-compreface:1.0.0",
   "gladys_version": ">=5.1.0",
-  "cover_image": "https://raw.githubusercontent.com/GladysAssistant/integration-template-js/master/cover.png",
-  "categories": ["lighting", "security", "environment"],
-  "transports": ["local", "cloud"],
+  "cover_image": "https://raw.githubusercontent.com/guim31/gladys-compreface/main/cover.png",
+  "categories": ["security"],
+  "transports": ["local"],
   "config_schema": [
     {
       "key": "intro",
       "type": "section",
-      "label": { "en": "Getting started", "fr": "Pour commencer" },
+      "label": {
+        "en": "Your CompreFace server",
+        "fr": "Votre serveur CompreFace",
+        "de": "Dein CompreFace-Server",
+        "es": "Su servidor CompreFace"
+      },
       "description": {
-        "en": "The demo weather station reads real data from the free Open-Meteo API: pick the coordinates to observe. No account, no API key.",
-        "fr": "La station météo de démonstration lit de vraies données via l'API gratuite Open-Meteo : choisissez les coordonnées à observer. Pas de compte, pas de clé d'API."
+        "en": "CompreFace recognizes the faces of the people you taught it, on your own machine. Enter its address and the key of a Recognition service, then up to four cameras below, and open the Discovery tab.",
+        "fr": "CompreFace reconnaît les visages des personnes que vous lui avez apprises, sur votre propre machine. Saisissez son adresse et la clé d'un service Recognition, puis jusqu'à quatre caméras ci-dessous, et ouvrez l'onglet Découverte.",
+        "de": "CompreFace erkennt die Gesichter der Personen, die du ihm beigebracht hast, auf deinem eigenen Rechner. Gib seine Adresse und den Schlüssel eines Recognition-Dienstes ein, dann unten bis zu vier Kameras, und öffne den Tab „Entdecken“.",
+        "es": "CompreFace reconoce los rostros de las personas que usted le ha enseñado, en su propia máquina. Introduzca su dirección y la clave de un servicio Recognition, luego hasta cuatro cámaras más abajo, y abra la pestaña Descubrir."
       },
       "links": [
         {
-          "url": "https://open-meteo.com/en/docs",
-          "label": { "en": "Open-Meteo documentation", "fr": "Documentation Open-Meteo" }
+          "url": "https://github.com/guim31/gladys-compreface/blob/main/docs/en.md",
+          "label": {
+            "en": "Setup guide",
+            "fr": "Guide d'installation",
+            "de": "Installationsanleitung",
+            "es": "Guía de instalación"
+          }
         }
       ]
     },
     {
-      "key": "latitude",
-      "type": "number",
-      "label": { "en": "Latitude", "fr": "Latitude" },
-      "description": {
-        "en": "Latitude used for the demo weather sensor.",
-        "fr": "Latitude utilisée par le capteur météo de démonstration."
+      "key": "url",
+      "type": "string",
+      "label": {
+        "en": "CompreFace address",
+        "fr": "Adresse de CompreFace",
+        "de": "CompreFace-Adresse",
+        "es": "Dirección de CompreFace"
       },
-      "placeholder": { "en": "e.g. 48.8566", "fr": "ex. 48.8566" },
+      "description": {
+        "en": "Without a port, 8000 is used. Add https:// for a reverse proxy.",
+        "fr": "Sans port, 8000 est utilisé. Ajoutez https:// derrière un proxy inverse.",
+        "de": "Ohne Port wird 8000 verwendet. Füge https:// hinter einem Reverse-Proxy hinzu.",
+        "es": "Sin puerto, se usa el 8000. Añada https:// detrás de un proxy inverso."
+      },
+      "placeholder": {
+        "en": "e.g. 192.168.1.20",
+        "fr": "ex. 192.168.1.20",
+        "de": "z. B. 192.168.1.20",
+        "es": "p. ej. 192.168.1.20"
+      },
       "required": true,
-      "default": 48.8566,
-      "min": -90,
-      "max": 90
+      "default": ""
     },
     {
-      "key": "longitude",
-      "type": "number",
-      "label": { "en": "Longitude", "fr": "Longitude" },
-      "description": {
-        "en": "Longitude used for the demo weather sensor.",
-        "fr": "Longitude utilisée par le capteur météo de démonstration."
+      "key": "api_key",
+      "type": "secret",
+      "label": {
+        "en": "API key of the Recognition service",
+        "fr": "Clé d'API du service Recognition",
+        "de": "API-Schlüssel des Recognition-Dienstes",
+        "es": "Clave de API del servicio Recognition"
       },
-      "placeholder": { "en": "e.g. 2.3522", "fr": "ex. 2.3522" },
-      "required": true,
-      "default": 2.3522,
-      "min": -180,
-      "max": 180
+      "description": {
+        "en": "In CompreFace: your application, a service of type Recognition, its API key.",
+        "fr": "Dans CompreFace : votre application, un service de type Recognition, sa clé d'API.",
+        "de": "In CompreFace: deine Anwendung, ein Dienst vom Typ Recognition, sein API-Schlüssel.",
+        "es": "En CompreFace: su aplicación, un servicio de tipo Recognition, su clave de API."
+      },
+      "required": true
     },
     {
-      "key": "unit",
+      "key": "similarity",
       "type": "select",
-      "label": { "en": "Temperature unit", "fr": "Unité de température" },
+      "label": {
+        "en": "Minimum similarity",
+        "fr": "Similarité minimale",
+        "de": "Mindestähnlichkeit",
+        "es": "Similitud mínima"
+      },
+      "description": {
+        "en": "Below it, a face is an unknown one. Higher: fewer mistakes, more unknown faces.",
+        "fr": "En dessous, un visage est inconnu. Plus haut : moins d'erreurs, plus de visages inconnus.",
+        "de": "Darunter gilt ein Gesicht als unbekannt. Höher: weniger Verwechslungen, mehr unbekannte Gesichter.",
+        "es": "Por debajo, un rostro es desconocido. Más alta: menos errores, más rostros desconocidos."
+      },
       "required": false,
-      "default": "celsius",
+      "default": "85",
       "options": [
-        { "value": "celsius", "label": { "en": "Celsius", "fr": "Celsius" } },
-        { "value": "fahrenheit", "label": { "en": "Fahrenheit", "fr": "Fahrenheit" } }
+        {
+          "value": "70",
+          "label": {
+            "en": "70 %",
+            "fr": "70 %",
+            "de": "70 %",
+            "es": "70 %"
+          }
+        },
+        {
+          "value": "75",
+          "label": {
+            "en": "75 %",
+            "fr": "75 %",
+            "de": "75 %",
+            "es": "75 %"
+          }
+        },
+        {
+          "value": "80",
+          "label": {
+            "en": "80 %",
+            "fr": "80 %",
+            "de": "80 %",
+            "es": "80 %"
+          }
+        },
+        {
+          "value": "85",
+          "label": {
+            "en": "85 %",
+            "fr": "85 %",
+            "de": "85 %",
+            "es": "85 %"
+          }
+        },
+        {
+          "value": "90",
+          "label": {
+            "en": "90 %",
+            "fr": "90 %",
+            "de": "90 %",
+            "es": "90 %"
+          }
+        },
+        {
+          "value": "95",
+          "label": {
+            "en": "95 %",
+            "fr": "95 %",
+            "de": "95 %",
+            "es": "95 %"
+          }
+        }
       ]
     },
     {
-      "key": "poll_frequency",
-      "type": "number",
-      "label": { "en": "Refresh interval (s)", "fr": "Intervalle de rafraîchissement (s)" },
+      "key": "detection",
+      "type": "select",
+      "label": {
+        "en": "Face detection threshold",
+        "fr": "Seuil de détection des visages",
+        "de": "Schwelle der Gesichtserkennung",
+        "es": "Umbral de detección de rostros"
+      },
       "description": {
-        "en": "How often sensors are polled, in seconds (one minute minimum).",
-        "fr": "Fréquence d'interrogation des capteurs, en secondes (une minute minimum)."
+        "en": "How sure CompreFace must be that a shape is a face. Lower finds small or turned faces, and more false faces.",
+        "fr": "À quel point CompreFace doit être sûr qu'une forme est un visage. Plus bas trouve les visages petits ou de profil, et plus de faux visages.",
+        "de": "Wie sicher CompreFace sein muss, dass eine Form ein Gesicht ist. Niedriger findet kleine oder gedrehte Gesichter und mehr falsche.",
+        "es": "Hasta qué punto CompreFace debe estar seguro de que una forma es un rostro. Más bajo encuentra rostros pequeños o de perfil, y más rostros falsos."
       },
       "required": false,
-      "default": 300,
-      "min": 60,
-      "max": 3600
+      "default": "80",
+      "options": [
+        {
+          "value": "50",
+          "label": {
+            "en": "50 %",
+            "fr": "50 %",
+            "de": "50 %",
+            "es": "50 %"
+          }
+        },
+        {
+          "value": "70",
+          "label": {
+            "en": "70 %",
+            "fr": "70 %",
+            "de": "70 %",
+            "es": "70 %"
+          }
+        },
+        {
+          "value": "80",
+          "label": {
+            "en": "80 %",
+            "fr": "80 %",
+            "de": "80 %",
+            "es": "80 %"
+          }
+        },
+        {
+          "value": "90",
+          "label": {
+            "en": "90 %",
+            "fr": "90 %",
+            "de": "90 %",
+            "es": "90 %"
+          }
+        }
+      ]
+    },
+    {
+      "key": "interval",
+      "type": "select",
+      "label": {
+        "en": "Analysis interval",
+        "fr": "Intervalle d'analyse",
+        "de": "Analyseintervall",
+        "es": "Intervalo de análisis"
+      },
+      "description": {
+        "en": "Each added camera is analyzed this often, one after the other. Every analysis takes CPU on the CompreFace machine.",
+        "fr": "Chaque caméra ajoutée est analysée à ce rythme, l'une après l'autre. Chaque analyse consomme du processeur sur la machine de CompreFace.",
+        "de": "Jede hinzugefügte Kamera wird in diesem Takt analysiert, eine nach der anderen. Jede Analyse kostet CPU auf dem CompreFace-Rechner.",
+        "es": "Cada cámara añadida se analiza con esta frecuencia, una tras otra. Cada análisis consume CPU en la máquina de CompreFace."
+      },
+      "required": false,
+      "default": "30",
+      "options": [
+        {
+          "value": "0",
+          "label": {
+            "en": "On demand only",
+            "fr": "À la demande seulement",
+            "de": "Nur auf Anfrage",
+            "es": "Solo bajo demanda"
+          }
+        },
+        {
+          "value": "5",
+          "label": {
+            "en": "5 seconds",
+            "fr": "5 secondes",
+            "de": "5 Sekunden",
+            "es": "5 segundos"
+          }
+        },
+        {
+          "value": "10",
+          "label": {
+            "en": "10 seconds",
+            "fr": "10 secondes",
+            "de": "10 Sekunden",
+            "es": "10 segundos"
+          }
+        },
+        {
+          "value": "30",
+          "label": {
+            "en": "30 seconds",
+            "fr": "30 secondes",
+            "de": "30 Sekunden",
+            "es": "30 segundos"
+          }
+        },
+        {
+          "value": "60",
+          "label": {
+            "en": "1 minute",
+            "fr": "1 minute",
+            "de": "1 Minute",
+            "es": "1 minuto"
+          }
+        },
+        {
+          "value": "300",
+          "label": {
+            "en": "5 minutes",
+            "fr": "5 minutes",
+            "de": "5 Minuten",
+            "es": "5 minutos"
+          }
+        },
+        {
+          "value": "900",
+          "label": {
+            "en": "15 minutes",
+            "fr": "15 minutes",
+            "de": "15 Minuten",
+            "es": "15 minutos"
+          }
+        }
+      ]
+    },
+    {
+      "key": "language",
+      "type": "select",
+      "label": {
+        "en": "Language of the names",
+        "fr": "Langue des noms",
+        "de": "Sprache der Namen",
+        "es": "Idioma de los nombres"
+      },
+      "description": {
+        "en": "Feature names and scene texts.",
+        "fr": "Noms des fonctionnalités et textes des scènes.",
+        "de": "Namen der Funktionen und Szenentexte.",
+        "es": "Nombres de las funciones y textos de las escenas."
+      },
+      "required": false,
+      "default": "fr",
+      "options": [
+        {
+          "value": "en",
+          "label": {
+            "en": "English",
+            "fr": "Anglais",
+            "de": "Englisch",
+            "es": "Inglés"
+          }
+        },
+        {
+          "value": "fr",
+          "label": {
+            "en": "French",
+            "fr": "Français",
+            "de": "Französisch",
+            "es": "Francés"
+          }
+        },
+        {
+          "value": "de",
+          "label": {
+            "en": "German",
+            "fr": "Allemand",
+            "de": "Deutsch",
+            "es": "Alemán"
+          }
+        },
+        {
+          "value": "es",
+          "label": {
+            "en": "Spanish",
+            "fr": "Espagnol",
+            "de": "Spanisch",
+            "es": "Español"
+          }
+        }
+      ]
+    },
+    {
+      "key": "camera_1",
+      "type": "section",
+      "label": {
+        "en": "Camera 1",
+        "fr": "Caméra 1",
+        "de": "Kamera 1",
+        "es": "Cámara 1"
+      },
+      "description": {
+        "en": "A JPEG snapshot URL (http://user:password@camera/snapshot.jpg). Leave the address empty to skip a camera.",
+        "fr": "Une URL d'instantané JPEG (http://utilisateur:motdepasse@camera/snapshot.jpg). Laissez l'adresse vide pour ne pas utiliser une caméra.",
+        "de": "Eine JPEG-Schnappschuss-URL (http://benutzer:passwort@kamera/snapshot.jpg). Lass die Adresse leer, um eine Kamera auszulassen.",
+        "es": "Una URL de instantánea JPEG (http://usuario:contraseña@camara/snapshot.jpg). Deje la dirección vacía para no usar una cámara."
+      }
+    },
+    {
+      "key": "camera_1_name",
+      "type": "string",
+      "label": {
+        "en": "Name",
+        "fr": "Nom",
+        "de": "Name",
+        "es": "Nombre"
+      },
+      "required": false,
+      "default": ""
+    },
+    {
+      "key": "camera_1_url",
+      "type": "string",
+      "label": {
+        "en": "Snapshot address",
+        "fr": "Adresse de l'instantané",
+        "de": "Schnappschuss-Adresse",
+        "es": "Dirección de la instantánea"
+      },
+      "placeholder": {
+        "en": "http://…/snapshot.jpg",
+        "fr": "http://…/snapshot.jpg",
+        "de": "http://…/snapshot.jpg",
+        "es": "http://…/snapshot.jpg"
+      },
+      "required": false,
+      "default": ""
+    },
+    {
+      "key": "camera_2",
+      "type": "section",
+      "label": {
+        "en": "Camera 2",
+        "fr": "Caméra 2",
+        "de": "Kamera 2",
+        "es": "Cámara 2"
+      }
+    },
+    {
+      "key": "camera_2_name",
+      "type": "string",
+      "label": {
+        "en": "Name",
+        "fr": "Nom",
+        "de": "Name",
+        "es": "Nombre"
+      },
+      "required": false,
+      "default": ""
+    },
+    {
+      "key": "camera_2_url",
+      "type": "string",
+      "label": {
+        "en": "Snapshot address",
+        "fr": "Adresse de l'instantané",
+        "de": "Schnappschuss-Adresse",
+        "es": "Dirección de la instantánea"
+      },
+      "placeholder": {
+        "en": "http://…/snapshot.jpg",
+        "fr": "http://…/snapshot.jpg",
+        "de": "http://…/snapshot.jpg",
+        "es": "http://…/snapshot.jpg"
+      },
+      "required": false,
+      "default": ""
+    },
+    {
+      "key": "camera_3",
+      "type": "section",
+      "label": {
+        "en": "Camera 3",
+        "fr": "Caméra 3",
+        "de": "Kamera 3",
+        "es": "Cámara 3"
+      }
+    },
+    {
+      "key": "camera_3_name",
+      "type": "string",
+      "label": {
+        "en": "Name",
+        "fr": "Nom",
+        "de": "Name",
+        "es": "Nombre"
+      },
+      "required": false,
+      "default": ""
+    },
+    {
+      "key": "camera_3_url",
+      "type": "string",
+      "label": {
+        "en": "Snapshot address",
+        "fr": "Adresse de l'instantané",
+        "de": "Schnappschuss-Adresse",
+        "es": "Dirección de la instantánea"
+      },
+      "placeholder": {
+        "en": "http://…/snapshot.jpg",
+        "fr": "http://…/snapshot.jpg",
+        "de": "http://…/snapshot.jpg",
+        "es": "http://…/snapshot.jpg"
+      },
+      "required": false,
+      "default": ""
+    },
+    {
+      "key": "camera_4",
+      "type": "section",
+      "label": {
+        "en": "Camera 4",
+        "fr": "Caméra 4",
+        "de": "Kamera 4",
+        "es": "Cámara 4"
+      }
+    },
+    {
+      "key": "camera_4_name",
+      "type": "string",
+      "label": {
+        "en": "Name",
+        "fr": "Nom",
+        "de": "Name",
+        "es": "Nombre"
+      },
+      "required": false,
+      "default": ""
+    },
+    {
+      "key": "camera_4_url",
+      "type": "string",
+      "label": {
+        "en": "Snapshot address",
+        "fr": "Adresse de l'instantané",
+        "de": "Schnappschuss-Adresse",
+        "es": "Dirección de la instantánea"
+      },
+      "placeholder": {
+        "en": "http://…/snapshot.jpg",
+        "fr": "http://…/snapshot.jpg",
+        "de": "http://…/snapshot.jpg",
+        "es": "http://…/snapshot.jpg"
+      },
+      "required": false,
+      "default": ""
     }
   ],
   "actions": [
     {
-      "key": "test_weather",
-      "label": { "en": "Test the weather provider", "fr": "Tester le fournisseur météo" },
-      "timeout_seconds": 30
+      "key": "check",
+      "label": {
+        "en": "Check the connection",
+        "fr": "Vérifier la connexion",
+        "de": "Verbindung prüfen",
+        "es": "Comprobar la conexión"
+      },
+      "description": {
+        "en": "Lists the people CompreFace knows, then analyzes each camera once.",
+        "fr": "Liste les personnes que CompreFace connaît, puis analyse chaque caméra une fois.",
+        "de": "Listet die Personen auf, die CompreFace kennt, und analysiert dann jede Kamera einmal.",
+        "es": "Enumera las personas que CompreFace conoce y analiza cada cámara una vez."
+      },
+      "timeout_seconds": 120
     },
     {
-      "key": "identify",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
+      "key": "add_face",
+      "label": {
+        "en": "Add a face",
+        "fr": "Ajouter un visage",
+        "de": "Gesicht hinzufügen",
+        "es": "Añadir un rostro"
+      },
+      "description": {
+        "en": "Stand alone in front of a camera: the face it sees now becomes an example of this person.",
+        "fr": "Placez-vous seul(e) devant une caméra : le visage qu'elle voit devient un exemple de cette personne.",
+        "de": "Stell dich allein vor eine Kamera: Das Gesicht, das sie jetzt sieht, wird ein Beispiel dieser Person.",
+        "es": "Colóquese solo(a) frente a una cámara: el rostro que ve ahora se convierte en un ejemplo de esta persona."
+      },
+      "timeout_seconds": 90,
       "fields": [
         {
-          "key": "device",
+          "key": "camera",
           "type": "select",
           "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
+          "label": {
+            "en": "Camera",
+            "fr": "Caméra",
+            "de": "Kamera",
+            "es": "Cámara"
+          },
+          "required": true
+        },
+        {
+          "key": "person",
+          "type": "string",
+          "label": {
+            "en": "Name of the person",
+            "fr": "Nom de la personne",
+            "de": "Name der Person",
+            "es": "Nombre de la persona"
+          },
           "required": true
         }
       ]
@@ -103,75 +580,311 @@
   ],
   "scene_triggers": [
     {
-      "key": "motion_detected",
-      "label": { "en": "Motion detected", "fr": "Mouvement détecté" },
+      "key": "person_recognized",
+      "label": {
+        "en": "Person recognized by CompreFace",
+        "fr": "Personne reconnue par CompreFace",
+        "de": "Person von CompreFace erkannt",
+        "es": "Persona reconocida por CompreFace"
+      },
       "description": {
-        "en": "A demo motion sensor saw a person or an animal move.",
-        "fr": "Un détecteur de démonstration a vu bouger une personne ou un animal."
+        "en": "A known person appears in a regular analysis (absent from the previous one).",
+        "fr": "Une personne connue apparaît lors d'une analyse régulière (absente de la précédente).",
+        "de": "Eine bekannte Person erscheint bei einer regelmäßigen Analyse (in der vorherigen nicht da).",
+        "es": "Una persona conocida aparece en un análisis regular (ausente del anterior)."
       },
       "fields": [
         {
-          "key": "device",
+          "key": "camera",
           "type": "select",
           "source": "devices",
-          "label": { "en": "Sensor", "fr": "Détecteur" }
+          "label": {
+            "en": "Camera",
+            "fr": "Caméra",
+            "de": "Kamera",
+            "es": "Cámara"
+          }
         },
         {
-          "key": "target",
-          "type": "multi_select",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" },
-          "options": [
-            { "value": "person", "label": { "en": "Person", "fr": "Personne" } },
-            { "value": "animal", "label": { "en": "Animal", "fr": "Animal" } }
-          ]
+          "key": "person",
+          "type": "string",
+          "label": {
+            "en": "Person (exact name, empty: anyone)",
+            "fr": "Personne (nom exact, vide : n'importe qui)",
+            "de": "Person (genauer Name, leer: jede)",
+            "es": "Persona (nombre exacto, vacío: cualquiera)"
+          }
         }
       ],
       "variables": [
         {
-          "key": "target",
+          "key": "camera_name",
           "type": "string",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" }
+          "label": {
+            "en": "Camera",
+            "fr": "Caméra",
+            "de": "Kamera",
+            "es": "Cámara"
+          }
+        },
+        {
+          "key": "person",
+          "type": "string",
+          "label": {
+            "en": "Person",
+            "fr": "Personne",
+            "de": "Person",
+            "es": "Persona"
+          }
+        },
+        {
+          "key": "similarity",
+          "type": "number",
+          "label": {
+            "en": "Similarity (%)",
+            "fr": "Similarité (%)",
+            "de": "Ähnlichkeit (%)",
+            "es": "Similitud (%)"
+          }
+        }
+      ]
+    },
+    {
+      "key": "unknown_face",
+      "label": {
+        "en": "Unknown face seen by CompreFace",
+        "fr": "Visage inconnu vu par CompreFace",
+        "de": "Unbekanntes Gesicht von CompreFace gesehen",
+        "es": "Rostro desconocido visto por CompreFace"
+      },
+      "description": {
+        "en": "A face nobody knows appears in a regular analysis (none in the previous one).",
+        "fr": "Un visage que personne ne connaît apparaît lors d'une analyse régulière (aucun dans la précédente).",
+        "de": "Ein Gesicht, das niemand kennt, erscheint bei einer regelmäßigen Analyse (keins in der vorherigen).",
+        "es": "Un rostro que nadie conoce aparece en un análisis regular (ninguno en el anterior)."
+      },
+      "fields": [
+        {
+          "key": "camera",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Camera",
+            "fr": "Caméra",
+            "de": "Kamera",
+            "es": "Cámara"
+          }
+        }
+      ],
+      "variables": [
+        {
+          "key": "camera_name",
+          "type": "string",
+          "label": {
+            "en": "Camera",
+            "fr": "Caméra",
+            "de": "Kamera",
+            "es": "Cámara"
+          }
+        },
+        {
+          "key": "faces",
+          "type": "number",
+          "label": {
+            "en": "Unknown faces",
+            "fr": "Visages inconnus",
+            "de": "Unbekannte Gesichter",
+            "es": "Rostros desconocidos"
+          }
+        }
+      ]
+    },
+    {
+      "key": "camera_unreachable",
+      "label": {
+        "en": "Camera image not read",
+        "fr": "Image de caméra non lue",
+        "de": "Kamerabild nicht gelesen",
+        "es": "Imagen de cámara no leída"
+      },
+      "description": {
+        "en": "The picture of a camera could not be read, the first time in a row.",
+        "fr": "L'image d'une caméra n'a pas pu être lue, la première fois d'affilée.",
+        "de": "Das Bild einer Kamera konnte nicht gelesen werden, beim ersten Mal in Folge.",
+        "es": "No se pudo leer la imagen de una cámara, la primera vez seguida."
+      },
+      "fields": [
+        {
+          "key": "camera",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Camera",
+            "fr": "Caméra",
+            "de": "Kamera",
+            "es": "Cámara"
+          }
+        }
+      ],
+      "variables": [
+        {
+          "key": "camera_name",
+          "type": "string",
+          "label": {
+            "en": "Camera",
+            "fr": "Caméra",
+            "de": "Kamera",
+            "es": "Cámara"
+          }
         }
       ]
     }
   ],
   "scene_actions": [
     {
-      "key": "identify_device",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "description": {
-        "en": "Make a device signal itself (the demo light blinks).",
-        "fr": "Fait se signaler un appareil (la lampe de démonstration clignote)."
+      "key": "analyze",
+      "label": {
+        "en": "Recognize faces on a camera",
+        "fr": "Reconnaître les visages d'une caméra",
+        "de": "Gesichter einer Kamera erkennen",
+        "es": "Reconocer los rostros de una cámara"
       },
-      "timeout_seconds": 15,
+      "description": {
+        "en": "Analyzes the camera now and updates its image, for the next actions.",
+        "fr": "Analyse la caméra maintenant et met à jour son image, pour les actions suivantes.",
+        "de": "Analysiert die Kamera jetzt und aktualisiert ihr Bild, für die nächsten Aktionen.",
+        "es": "Analiza la cámara ahora y actualiza su imagen, para las siguientes acciones."
+      },
+      "timeout_seconds": 75,
       "fields": [
         {
-          "key": "device",
+          "key": "camera",
           "type": "select",
           "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
+          "label": {
+            "en": "Camera",
+            "fr": "Caméra",
+            "de": "Kamera",
+            "es": "Cámara"
+          },
           "required": true
         }
       ],
       "outputs": [
         {
-          "key": "signalled",
+          "key": "recognized",
           "type": "boolean",
-          "label": { "en": "Device signalled", "fr": "Appareil signalé" }
+          "label": {
+            "en": "Known person seen",
+            "fr": "Personne connue vue",
+            "de": "Bekannte Person gesehen",
+            "es": "Persona conocida vista"
+          }
+        },
+        {
+          "key": "person",
+          "type": "string",
+          "label": {
+            "en": "Most similar person",
+            "fr": "Personne la plus ressemblante",
+            "de": "Ähnlichste Person",
+            "es": "Persona más parecida"
+          }
+        },
+        {
+          "key": "people",
+          "type": "string",
+          "label": {
+            "en": "People recognized",
+            "fr": "Personnes reconnues",
+            "de": "Erkannte Personen",
+            "es": "Personas reconocidas"
+          }
+        },
+        {
+          "key": "similarity",
+          "type": "number",
+          "label": {
+            "en": "Similarity (%)",
+            "fr": "Similarité (%)",
+            "de": "Ähnlichkeit (%)",
+            "es": "Similitud (%)"
+          }
+        },
+        {
+          "key": "unknown",
+          "type": "number",
+          "label": {
+            "en": "Unknown faces",
+            "fr": "Visages inconnus",
+            "de": "Unbekannte Gesichter",
+            "es": "Rostros desconocidos"
+          }
+        },
+        {
+          "key": "faces",
+          "type": "number",
+          "label": {
+            "en": "Faces",
+            "fr": "Visages",
+            "de": "Gesichter",
+            "es": "Rostros"
+          }
+        },
+        {
+          "key": "result",
+          "type": "string",
+          "label": {
+            "en": "Result",
+            "fr": "Résultat",
+            "de": "Ergebnis",
+            "es": "Resultado"
+          }
         }
       ]
     }
   ],
   "widgets": [
     {
-      "key": "demo_status",
-      "label": { "en": "Demo status", "fr": "État de la démo" },
-      "description": {
-        "en": "Live temperature and plug power, plug connection and observed location.",
-        "fr": "Température et puissance en direct, connexion de la prise, position observée."
+      "key": "camera",
+      "label": {
+        "en": "CompreFace camera",
+        "fr": "Caméra CompreFace",
+        "de": "CompreFace-Kamera",
+        "es": "Cámara CompreFace"
       },
-      "icon": "activity",
-      "action_timeout_seconds": 15
+      "description": {
+        "en": "The analyzed image, the people recognized, the unknown faces, and a button to analyze now.",
+        "fr": "L'image analysée, les personnes reconnues, les visages inconnus, et un bouton pour analyser.",
+        "de": "Analysiertes Bild, erkannte Personen, unbekannte Gesichter und eine Schaltfläche zum Analysieren.",
+        "es": "La imagen analizada, las personas reconocidas, los rostros desconocidos y un botón para analizar."
+      },
+      "icon": "user-check",
+      "action_timeout_seconds": 75,
+      "settings": [
+        {
+          "key": "camera",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Camera",
+            "fr": "Caméra",
+            "de": "Kamera",
+            "es": "Cámara"
+          },
+          "required": true
+        },
+        {
+          "key": "hide_button",
+          "type": "boolean",
+          "label": {
+            "en": "Hide the Analyze button",
+            "fr": "Masquer le bouton Analyser",
+            "de": "Schaltfläche Analysieren ausblenden",
+            "es": "Ocultar el botón Analizar"
+          }
+        }
+      ]
     }
   ]
 }

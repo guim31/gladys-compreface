@@ -1,0 +1,7 @@
+{
+  "status": 400,
+  "body": {
+    "message": "No face is found in the given image",
+    "code": 28
+  }
+}

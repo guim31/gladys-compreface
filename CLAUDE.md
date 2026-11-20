@@ -32,15 +32,20 @@ pushing.
 
 ```
 index.js                          SDK wiring only: handlers registered before connect()
-src/devices/index.js              registry of the device blueprints + dispatch helpers
-src/devices/<type>.js             one device type per file (buildDevice, onPoll, onSetValue...)
-src/scenes.js                     scene action handlers (manifest `scene_actions`)
-src/widgets.js                    dashboard widget handlers (manifest `widgets`)
+src/app.js                        registers every SDK handler on the monitor; actions check, add_face
+src/monitor.js                    cameras, analyses, timer, states, images, scene events, status, add face
+src/compreface.js                 CompreFace REST client (subjects, recognize, faces) and its errors
+src/snapshot.js                   camera addresses: HTTP snapshot download (Basic credentials)
+src/devices.js                    the camera device (features, external ids), summary of a recognition
+src/image.js, image-worker.js,    JPEG shrunk to the 150 KB of a Gladys camera image, in a worker
+  jpeg-scaled.js                    (from gladys-shinobi via gladys-doods)
+src/scenes.js                     scene action `analyze`
+src/widgets.js                    dashboard widget `camera`
+src/texts.js                      status, failures (ActionFailure), check report, in en/fr/de/es
 src/config.js                     DEFAULT_CONFIG (mirrors the manifest defaults) + normalization
-src/weather.js                    example driver (Open-Meteo)
-gladys-assistant-integration.json manifest: name, config_schema, actions, image...
-docs/en.md, docs/fr.md            user documentation, re-hosted by Gladys (mandatory)
-test/                             node --test, against the SDK's fake Gladys (integration-sdk/testing)
+gladys-assistant-integration.json manifest: config (4 camera slots), actions, triggers, widget
+docs/{en,fr,de,es}.md             user documentation, re-hosted by Gladys (same sections)
+test/                             node --test, the SDK's fake Gladys + a fake CompreFace (recorded answers)
 .github/scripts/release.mjs       release helpers (manifest bump, changelog), tested in test/
 ```
 
@@ -259,3 +264,29 @@ long, et sur un « Sie »/« Ihr… » de politesse en allemand. Le store exige 
 - Docs `en`, `fr`, `de`, `es` avec les mêmes sections.
 - Chauffe, ouverture, sécurité : ne rien rendre pilotable « comme un thermostat » ou par un assistant
   vocal quand une erreur serait dangereuse (leçon d'OctoPrint).
+
+## CompreFace (propre à cette intégration)
+
+- API REST de CompreFace 1.2.0, service **Recognition**, clé dans l'en-tête `x-api-key` : `GET
+/api/v1/recognition/subjects` → `{ subjects: [...] }` ; `POST /recognize?limit=0&prediction_count=1&det_prob_threshold=0.8`
+  avec `{ file: <base64> }` → `{ result: [{ box: { probability, x_min, y_min, x_max, y_max }, subjects: [{ subject,
+similarity }] }] }` (similarité 0-1, `subjects` vide si le service ne connaît personne) ; `POST
+/faces?subject=<nom>` → 201 `{ image_id, subject }` (sujet créé s'il n'existe pas). Réponses enregistrées dans
+  `test/fixtures/compreface`.
+- Erreurs `{ message, code }` : **code 28 (400) « No face is found » aussi pour des octets qui ne sont pas une
+  image** (traité comme un résultat vide) ; clé d'aucun service Recognition (clé Detection comprise) : **404 code
+  10, et le message contient la clé** → jamais journalisé ; clé pas au format UUID : 400 code 26 ; sans clé : 400
+  code 20.
+- **Première reconnaissance après le démarrage de CompreFace : 45 s** (chargement des modèles), puis ~0,5 s sur CPU :
+  délai client de 60 s, actions de 75 à 120 s.
+- L'image tout-en-un `exadel/compreface:1.2.0` écoute sur le port 80 (8000 côté hôte dans la doc officielle), met 2 à
+  3 minutes à démarrer (service admin Java en dernier), demande l'AVX. Le service admin s'utilise avec le cookie
+  `CFSESSION` posé par `POST /admin/oauth/token` (client `CommonClientId:password`), pas en `Bearer`.
+- Une intégration externe **ne peut pas lire l'image d'une caméra d'une autre intégration** (aucune API du SDK) :
+  l'utilisateur donne l'URL d'instantané. Emplacements fixes `camera_1…4`, l'emplacement est l'identité de
+  l'appareil.
+- Déclencheurs sur **apparition** (personne absente de l'analyse régulière précédente ; visage inconnu quand il n'y en
+  avait aucun) ; seules les analyses régulières les émettent, la première depuis un démarrage, un ajout ou un
+  changement de réglages ne fait qu'enregistrer la scène. « Dernière personne reconnue » et « Reconnue le » ne
+  changent qu'à l'arrivée d'une personne, pas à chaque analyse où elle reste.
+- « Ajouter un visage » refuse une image à zéro ou plusieurs visages (sinon CompreFace garde le premier trouvé).

@@ -12,53 +12,20 @@ the notes of the version's GitHub Release.
 
 ### Added
 
-- A working example of scene triggers, scene actions and dashboard widgets
-  (Gladys 5.1.0 or later).
-- `CHANGELOG.md`, rolled by the Release workflow.
-- A GitHub Release for every version, with its changelog section as notes: the
-  Gladys Supervision page links each version to the repository's releases.
-- CI runs the tests on Node 22 and 24, and builds the Docker image.
-- Dependabot keeps the npm dependencies and the GitHub Actions up to date.
-- `SECURITY.md` (how to report a vulnerability) and `CLAUDE.md` (project rules
-  for contributors and coding assistants).
-- Manifest tests: `version` matches `package.json`, `docker_image` is tagged
-  with it, descriptions hold 10 to 100 characters, placeholders are
-  multi-language objects.
-- The latitude and longitude fields show an example value as placeholder.
+- Local face recognition with CompreFace on up to four cameras (JPEG snapshot
+  URL): one Gladys device per camera with its analyzed image, the last person
+  recognized, the similarity and when, "Known person", "Unknown face" and the
+  number of faces.
+- Minimum similarity and face detection threshold; analysis interval from 5
+  seconds to 15 minutes, or on demand only.
+- Scene triggers "Person recognized by CompreFace" (when a known person
+  appears, filter on the name), "Unknown face seen by CompreFace" and "Camera
+  image not read"; scene action "Recognize faces on a camera" with its outputs
+  (person, people, similarity, unknown faces, result).
+- Dashboard widget "CompreFace camera" with an "Analyze now" button.
+- "Check the connection" action (the people CompreFace knows, one analysis per
+  camera) and "Add a face" action (the face a camera sees now becomes an
+  example of a person).
+- English, French, German and Spanish.
 
-### Changed
-
-- Node.js 22 or later is required (Node 20 is end-of-life).
-- Integration SDK 0.16.1. The tests now run against the fake Gladys of the
-  SDK, which refuses the payloads Gladys refuses, including a device feature
-  missing `name`, `min`, `max`, `read_only` or `has_feedback`. A device
-  published with a `poll_frequency` is now polled without `should_poll: true`
-  on a recent core (an explicit `should_poll: false` opts out); the template
-  keeps the field explicit for the older cores.
-- The refresh interval is one minute minimum, the fastest Gladys polls a
-  device. The plug's power is only sent when it changes, and every 30
-  minutes otherwise.
-
-### Fixed
-
-- The switch, the light, the plug, the motion sensor and the camera could not
-  be added from the Discovery tab: their on/off, motion and image features had
-  no `min`/`max`, which Gladys requires (HTTP 422 "t_device_feature.min cannot
-  be null"). A test now checks that every feature carries the columns Gladys
-  needs to create it.
-- Gladys refused the devices of the Discovery tab: the weather station and
-  the plug declared their poll frequency in seconds instead of one of the
-  values Gladys accepts, and were never polled. They now poll every minute,
-  and the readings follow the refresh interval of the configuration.
-
-- The release commit no longer fails `npm run format:check`: the Release
-  workflow updates the manifest `version` and `docker_image` in place instead
-  of re-printing the whole file with `jq`.
-- The integration can write to `/data`: the image creates the directory owned
-  by the `node` user, a new Docker volume was owned by root.
-- A sub-container running the integration's own image follows it to the new
-  tag at each release, as well as in the manifest of the build summary: it kept
-  the previous tag, which may not exist on the registry. Sub-containers on a
-  third-party image (a broker, a database...) keep theirs.
-
-[Unreleased]: https://github.com/GladysAssistant/integration-template-js/commits/main
+[Unreleased]: https://github.com/guim31/gladys-compreface/commits/main
